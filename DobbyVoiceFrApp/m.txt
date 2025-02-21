@@ -1,0 +1,117 @@
+import { Component } from '@angular/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { CallNumber } from '@ionic-native/call-number/ngx';
+import { Geolocation } from '@capacitor/geolocation';
+import { Plugins } from '@capacitor/core';
+
+const { App, Permissions } = Plugins;
+
+@Component({
+  selector: 'app-emergency',
+  templateUrl: './emergency.page.html',
+  styleUrls: ['./emergency.page.scss'],
+})
+export class EmergencyPage {
+ 
+   isListening = false;
+  
+    constructor(private callNumber: CallNumber) {}
+  
+    async checkSpeechRecognitionPermission() {
+      const hasPermission = await SpeechRecognition.requestPermissions();
+      if (!PermissionStatus) {
+        console.error('speech recognition permission not granted');
+        alert('Speech recognition permission is required to proceed.');
+        return false;
+      }
+      return true;
+    }
+  
+    async startSpeechRecognition() {
+      await this.checkSpeechRecognitionPermission();
+  
+      this.isListening = true;
+
+      try {
+        const result = await SpeechRecognition.start({
+          language: 'en-US',
+          partialResults: true,
+        });
+        console.log('speech Recognition started:',result);
+  
+        SpeechRecognition.addListener('partialResults', (data: any) => {
+          console.log('Speech result:', data);
+          if (data.value?.some((phrase: string) => phrase.toLowerCase().includes('help me'))) {
+            console.log('Trigger word detected:help me');
+            this.triggerEmergency();
+          }
+        });
+      } catch (error) {
+        console.error('Speech recognition error:', error);
+      }
+    }
+  
+    async stopSpeechRecognition() {
+      this.isListening = false;
+      try {
+        await SpeechRecognition.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
+    }
+  
+    async triggerEmergency() {
+      this.isListening = false;
+      console.log('emergency triggered');
+  
+      // Stop recognition if still running
+      try {
+        await SpeechRecognition.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
+  
+      const emergencyContact = '+91 8088756142'; // Replace with user's emergency number
+      alert('Emergency detected! Initiating actions...');
+      console.log('placing call to:',emergencyContact);
+
+      try {
+        const permissionStatus = await Plugins['Permissions']['request']({ name: 'call' });
+        if (permissionStatus.state !== 'granted') {
+          alert('Call permission not granted. Cannot place call.');
+          return;
+        }
+      } catch (error) {
+        console.error('Permission check error:', error);
+        return;
+      }
+
+      
+    
+
+      // Call the emergency contact
+      try {
+        console.log('attempting to call:',emergencyContact)
+        await this.callNumber.callNumber(emergencyContact, true);
+        console.log('Emergency call placed.');
+      } catch (error) {
+        console.error('Error placing call:', error);
+        alert('failed to place the emergency call.');
+      }
+  
+      // Get the user's location
+      try {
+        const position = await Geolocation.getCurrentPosition();
+        const locationUrl = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+        console.log(`User's location: ${locationUrl}`);
+        alert(`Emergency location sent: ${locationUrl}`);
+      } catch (error) {
+        console.error('Error getting location:', error);
+        alert('Unable to retrieve location. Ensure location services are enabled.');
+      }
+    }
+  requestCallPermission() {
+    throw new Error('Method not implemented.');
+  }
+  }
+  

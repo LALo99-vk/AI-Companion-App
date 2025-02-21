@@ -1,0 +1,29 @@
+<ion-header>
+  <ion-toolbar color="danger">
+    <ion-title>Emergency</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Emergency Assistance</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Press the button below to activate speech recognition. Say "help me" to trigger an emergency call and alert.</p>
+
+      <ion-button expand="block" color="danger" (click)="startSpeechRecognition()" [disabled]="isListening">
+        Start Listening
+      </ion-button>
+
+      <ion-button expand="block" color="primary" (click)="triggerEmergency()">
+        Simulate Emergency Call
+      </ion-button>
+
+    
+      <ion-button expand="block" color="medium" (click)="stopSpeechRecognition()" [disabled]="!isListening">
+        Stop Listening
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

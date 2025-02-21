@@ -1,0 +1,197 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import json
+
+class DiseasePredictionModel:
+    def __init__(self):
+        # Disease database with comprehensive information
+        self.disease_database = {
+            "Diabetes": {
+                "medications": [
+                    "Metformin", 
+                    "Insulin", 
+                    "Sulfonylureas"
+                ],
+                "diet": [
+                    "Low glycemic index foods",
+                    "Whole grains",
+                    "Lean proteins",
+                    "Vegetables"
+                ],
+                "workouts": [
+                    "Walking",
+                    "Swimming",
+                    "Cycling",
+                    "Strength training"
+                ],
+                "precautions": [
+                    "Monitor blood sugar regularly",
+                    "Maintain healthy weight",
+                    "Regular medical checkups"
+                ],
+                "description": "A metabolic disorder characterized by high blood sugar levels due to insulin resistance or insufficient insulin production."
+            },
+            "Heart Disease": {
+                "medications": [
+                    "Statins", 
+                    "Beta-blockers", 
+                    "ACE inhibitors"
+                ],
+                "diet": [
+                    "Low-sodium diet",
+                    "Mediterranean diet",
+                    "Fruits and vegetables",
+                    "Whole grains"
+                ],
+                "workouts": [
+                    "Cardio exercises",
+                    "Walking",
+                    "Light jogging",
+                    "Swimming"
+                ],
+                "precautions": [
+                    "Manage stress",
+                    "Quit smoking",
+                    "Limit alcohol consumption",
+                    "Regular heart health checkups"
+                ],
+                "description": "A range of conditions that affect the heart's ability to function normally, including coronary artery disease and heart rhythm problems."
+            }
+            # More diseases can be added here
+        }
+
+    def prepare_dataset(self, symptoms_data, disease_labels):
+        """
+        Prepare and preprocess the dataset
+        
+        :param symptoms_data: List of symptom lists for each patient
+        :param disease_labels: Corresponding disease labels
+        :return: Prepared training and testing datasets
+        """
+        # Use MultiLabelBinarizer to convert symptoms to binary matrix
+        mlb = MultiLabelBinarizer()
+        symptoms_encoded = mlb.fit_transform(symptoms_data)
+        
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(
+            symptoms_encoded, 
+            disease_labels, 
+            test_size=0.2, 
+            random_state=42
+        )
+        
+        # Scale the features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        return X_train_scaled, X_test_scaled, y_train, y_test, mlb
+
+    def train_model(self, X_train, y_train):
+        """
+        Train a Random Forest Classifier
+        
+        :param X_train: Training features
+        :param y_train: Training labels
+        :return: Trained model
+        """
+        model = RandomForestClassifier(
+            n_estimators=100, 
+            random_state=42, 
+            max_depth=10
+        )
+        model.fit(X_train, y_train)
+        return model
+
+    def evaluate_model(self, model, X_test, y_test):
+        """
+        Evaluate the model's performance
+        
+        :param model: Trained model
+        :param X_test: Testing features
+        :param y_test: Testing labels
+        :return: Performance metrics
+        """
+        y_pred = model.predict(X_test)
+        
+        # Classification report
+        report = classification_report(y_test, y_pred)
+        
+        # Confusion matrix visualization
+        cm = confusion_matrix(y_test, y_pred)
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.tight_layout()
+        plt.savefig('confusion_matrix.png')
+        
+        return report
+
+    def predict_disease(self, model, symptoms, mlb):
+        """
+        Predict disease based on input symptoms
+        
+        :param model: Trained model
+        :param symptoms: List of symptoms
+        :param mlb: MultiLabelBinarizer used for encoding
+        :return: Predicted disease and related information
+        """
+        # Encode symptoms
+        symptoms_encoded = mlb.transform([symptoms])
+        
+        # Predict
+        prediction = model.predict(symptoms_encoded)
+        
+        # Get disease information
+        disease = prediction[0]
+        disease_info = self.disease_database.get(disease, {})
+        
+        return {
+            "predicted_disease": disease,
+            "disease_details": disease_info
+        }
+
+def main():
+    # Example dataset (you would replace this with a comprehensive symptoms dataset)
+    symptoms_data = [
+        ["fever", "fatigue", "weight_loss"],
+        ["chest_pain", "shortness_breath", "irregular_heartbeat"],
+        # More symptom combinations
+    ]
+    
+    disease_labels = [
+        "Diabetes", 
+        "Heart Disease", 
+        # More disease labels
+    ]
+    
+    # Create and train the model
+    disease_predictor = DiseasePredictionModel()
+    X_train, X_test, y_train, y_test, mlb = disease_predictor.prepare_dataset(
+        symptoms_data, 
+        disease_labels
+    )
+    
+    # Train the model
+    model = disease_predictor.train_model(X_train, y_train)
+    
+    # Evaluate the model
+    performance = disease_predictor.evaluate_model(model, X_test, y_test)
+    print("Model Performance:\n", performance)
+    
+    # Example prediction
+    sample_symptoms = ["fever", "fatigue"]
+    prediction = disease_predictor.predict_disease(model, sample_symptoms, mlb)
+    print("\nPrediction Result:")
+    print(json.dumps(prediction, indent=2))
+
+if __name__ == "__main__":
+    main()

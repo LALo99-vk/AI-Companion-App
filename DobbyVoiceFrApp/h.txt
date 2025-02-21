@@ -1,0 +1,221 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import json
+import os
+
+class DiseasePredictionModel:
+    def __init__(self, dataset_folder):
+        """
+        Initialize the model with dataset paths
+        
+        :param dataset_folder: Path to folder containing CSV files
+        """
+        self.dataset_folder = dataset_folder
+        self.disease_database = self.load_disease_datasets()
+
+    def load_disease_datasets(self):
+        """
+        Load disease-related datasets from CSV files
+        
+        :return: Comprehensive disease information dictionary
+        """
+        disease_database = {}
+        
+        # List of expected CSV files
+        dataset_files = [
+            'disease.csv',
+            'symptoms.csv',
+            'medications.csv',
+            'diets.csv',
+            'workouts.csv',
+            'precautions.csv',
+            'description.csv'
+        ]
+        
+        # Validate all required files exist
+        missing_files = [f for f in dataset_files if not os.path.exists(os.path.join(self.dataset_folder, f))]
+        if missing_files:
+            raise FileNotFoundError(f"Missing dataset files: {missing_files}")
+        
+        # Load diseases from the primary disease CSV
+        diseases_df = pd.read_csv(os.path.join(self.dataset_folder, 'disease.csv'))
+        
+        for disease in diseases_df['disease_name']:
+            # Collect information from different CSVs
+            disease_info = {}
+            
+            # Load medications
+            meds_df = pd.read_csv(os.path.join(self.dataset_folder, 'medications.csv'))
+            disease_info['medications'] = meds_df[meds_df['disease_name'] == disease]['medication'].tolist()
+            
+            # Load diets
+            diets_df = pd.read_csv(os.path.join(self.dataset_folder, 'diets.csv'))
+            disease_info['diet'] = diets_df[diets_df['disease_name'] == disease]['diet'].tolist()
+            
+            # Load workouts
+            workouts_df = pd.read_csv(os.path.join(self.dataset_folder, 'workouts.csv'))
+            disease_info['workouts'] = workouts_df[workouts_df['disease_name'] == disease]['workout'].tolist()
+            
+            # Load precautions
+            precautions_df = pd.read_csv(os.path.join(self.dataset_folder, 'precautions.csv'))
+            disease_info['precautions'] = precautions_df[precautions_df['disease_name'] == disease]['precaution'].tolist()
+            
+            # Load description
+            desc_df = pd.read_csv(os.path.join(self.dataset_folder, 'description.csv'))
+            disease_info['description'] = desc_df[desc_df['disease_name'] == disease]['description'].values[0]
+            
+            # Store in disease database
+            disease_database[disease] = disease_info
+        
+        return disease_database
+
+    def prepare_dataset(self):
+        """
+        Prepare dataset for machine learning
+        
+        :return: Prepared training and testing datasets
+        """
+        # Load symptoms dataset
+        symptoms_df = pd.read_csv(os.path.join(self.dataset_folder, 'symptoms.csv'))
+        
+        # Extract symptoms and disease labels
+        symptoms_data = symptoms_df['symptoms'].apply(lambda x: x.split(',')).tolist()
+        disease_labels = symptoms_df['disease_name'].tolist()
+        
+        # Use MultiLabelBinarizer to convert symptoms to binary matrix
+        mlb = MultiLabelBinarizer()
+        symptoms_encoded = mlb.fit_transform(symptoms_data)
+        
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(
+            symptoms_encoded, 
+            disease_labels, 
+            test_size=0.2, 
+            random_state=42
+        )
+        
+        # Scale the features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        return X_train_scaled, X_test_scaled, y_train, y_test, mlb
+
+    def train_model(self, X_train, y_train):
+        """
+        Train a Random Forest Classifier
+        
+        :param X_train: Training features
+        :param y_train: Training labels
+        :return: Trained model
+        """
+        model = RandomForestClassifier(
+            n_estimators=100, 
+            random_state=42, 
+            max_depth=10
+        )
+        model.fit(X_train, y_train)
+        return model
+
+    def evaluate_model(self, model, X_test, y_test):
+        """
+        Evaluate the model's performance
+        
+        :param model: Trained model
+        :param X_test: Testing features
+        :param y_test: Testing labels
+        :return: Performance metrics
+        """
+        y_pred = model.predict(X_test)
+        
+        # Classification report
+        report = classification_report(y_test, y_pred)
+        
+        # Confusion matrix visualization
+        cm = confusion_matrix(y_test, y_pred)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title('Disease Prediction Confusion Matrix')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.tight_layout()
+        plt.savefig('confusion_matrix.png')
+        plt.close()
+        
+        return report
+
+    def predict_disease(self, model, symptoms, mlb):
+        """
+        Predict disease based on input symptoms
+        
+        :param model: Trained model
+        :param symptoms: List of symptoms
+        :param mlb: MultiLabelBinarizer used for encoding
+        :return: Predicted disease and related information
+        """
+        # Encode symptoms
+        symptoms_encoded = mlb.transform([symptoms])
+        
+        # Predict
+        prediction = model.predict(symptoms_encoded)
+        
+        # Get disease information
+        disease = prediction[0]
+        disease_info = self.disease_database.get(disease, {})
+        
+        return {
+            "predicted_disease": disease,
+            "disease_details": disease_info
+        }
+
+def main():
+    # Path to your dataset folder (replace with your actual path)
+    dataset_folder = './disease_datasets/'
+    
+    try:
+        # Create and train the model
+        disease_predictor = DiseasePredictionModel(dataset_folder)
+        
+        # Prepare the dataset
+        X_train, X_test, y_train, y_test, mlb = disease_predictor.prepare_dataset()
+        
+        # Train the model
+        model = disease_predictor.train_model(X_train, y_train)
+        
+        # Evaluate the model
+        performance = disease_predictor.evaluate_model(model, X_test, y_test)
+        print("Model Performance:\n", performance)
+        
+        # Example prediction
+        sample_symptoms = ["fever", "fatigue"]
+        prediction = disease_predictor.predict_disease(model, sample_symptoms, mlb)
+        print("\nPrediction Result:")
+        print(json.dumps(prediction, indent=2))
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+    chest pain, dizziness, loss of balance, lack of concentration
+
+     indigestion, headache, blurred and distorted vision, excessive hunger
+
+     itching, vomiting, fatigue, weight_loss jaundice
+
+
+     vomiting, yellowish skin, abdominal pain, swelling of stomach alcoholic heppatitis
+
+     cramps, bruising, obesity, swollen legs
+
+     back pain, weakness in limbs, neck pain, dizziness
