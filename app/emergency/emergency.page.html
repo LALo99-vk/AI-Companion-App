@@ -1,0 +1,41 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Emergency Help</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Voice Emergency Detection</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Say "Help me" to trigger emergency call and location sharing.</p>
+      
+      <ion-button expand="block" 
+                  [color]="isListening ? 'danger' : 'primary'"
+                  (click)="isListening ? stopSpeechRecognition() : startSpeechRecognition()">
+        {{ isListening ? 'Stop Listening' : 'Start Emergency Detection' }}
+      </ion-button>
+
+      <ion-text color="medium" *ngIf="isListening">
+        <p class="ion-text-center">Listening for emergency commands...</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Direct Emergency Button</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Press the button below for immediate emergency response</p>
+      
+      <ion-button expand="block" 
+                  color="danger"
+                  (click)="triggerEmergency()">
+        EMERGENCY - Get Help Now
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

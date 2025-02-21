@@ -1,0 +1,40 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Signup</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="signup-content">
+  <div class="logo-container">
+    <img src="/Users/test/DobbyAI/src/assets/icons-only.png" alt="App Logo" class="logo" />
+  </div>
+  
+  <ion-card>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">email</ion-label>
+        <ion-input type="email" [(ngModel)]="email"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Password</ion-label>
+        <ion-input type="password" [(ngModel)]="password"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Confirm Password</ion-label>
+        <ion-input type="password" [(ngModel)]="confirmPassword"></ion-input>
+      </ion-item>
+
+      <ion-button expand="block" (click)="signup()">Create Account</ion-button>
+
+      <!-- Signup back to login -->
+      <div class="login-prompt">
+        <p>
+          Already have an account?
+          <ion-button fill="clear" color="tertiary" (click)="navigateTologin()">Login</ion-button>
+        </p>
+      </div>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

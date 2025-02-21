@@ -1,0 +1,21 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      DOBBY AI Assistant 
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+
+  <div class="welcome-text">
+    <h2>Welcome to Dobby AI Assistant</h2>
+    <p>Get accurate health predictions, emergency alerts, and more!</p>
+  </div>
+
+  <ion-button (click)="GotoEmergencyPage()">
+    Go to Emergency Page
+  </ion-button>
+
+  <app-explore-container name="Tab 1 page"></app-explore-container>
+</ion-content>

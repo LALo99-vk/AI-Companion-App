@@ -1,0 +1,28 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      SYMPTOMS
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="symptoms-content">
+  <div class="voice-input-container">
+    <h2>Describe Your Symptoms</h2>
+    <p>Use the microphone below to provide symptoms via voice recognition.</p>
+    <ion-button expand="block" color="tertiary">
+      <ion-icon slot="start" name="mic"></ion-icon>
+      Start Recording
+    </ion-button>
+  </div>
+
+  <ion-item>
+    <ion-label position="floating">Enter Symptoms</ion-label>
+    <ion-input type="text" [(ngModel)]="symptoms"></ion-input>
+  </ion-item>
+  <ion-button expand="full" (click)="submitSymptoms()">Submit</ion-button>
+
+
+
+  <app-explore-container name="Tab 2 page"></app-explore-container>
+</ion-content>
